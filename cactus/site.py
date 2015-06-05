@@ -131,8 +131,11 @@ class Site(SiteCompatibilityLayer):
         self.static_path = os.path.join(path, 'static')
         self.script_path = os.path.join(os.getcwd(), __file__)
         self.locale_path = os.path.join(path, "locale")
+        
         self.yaml_page_path = os.path.join(path, "yaml_pages")
+        self.themes_path =  os.path.join(path, "themes")
 
+        
 
     def setup(self):
         """
@@ -141,10 +144,11 @@ class Site(SiteCompatibilityLayer):
         """
 
         settings = {
-            "TEMPLATE_DIRS": [self.template_path, self.page_path],
+            "TEMPLATE_DIRS": [self.template_path, self.page_path, self.themes_path],
             "INSTALLED_APPS": ['django.contrib.markup'],
+            #"STATICFILES_DIRS" : [self.themes_path]
         }
-
+        
         if self.locale is not None:
             settings.update({
                 "USE_I18N": True,
@@ -283,6 +287,38 @@ class Site(SiteCompatibilityLayer):
                 shutil.rmtree(static.pre_dir)
 
     def static(self):
+        theme = self.config.get('theme', None)
+        if theme:
+            return self.static_theme(theme)
+        return self.static_no_theme(self)
+
+
+    def static_theme(self, theme):
+
+        """
+        Retrieve a list of static files for the site
+        """
+        if self._static is None:
+
+            self._static = []
+
+            theme_static_path = os.path.join(self.themes_path, theme, 'static')
+
+            for path in fileList(theme_static_path, relative=True):
+                
+                full_path = os.path.join(self.themes_path, theme, 'static', path)
+                if os.path.islink(full_path):
+                    if not os.path.exists(os.path.realpath(full_path)):
+                        logger.warning("Skipping symlink that points to unexisting file:\n%s", full_path)
+                        continue
+                
+                self._static.append(Static(self, path, relative_to='themes/'+theme))
+
+
+        return self._static
+
+
+    def static_no_theme(self):
         """
         Retrieve a list of static files for the site
         """
@@ -298,8 +334,9 @@ class Site(SiteCompatibilityLayer):
                     if not os.path.exists(os.path.realpath(full_path)):
                         logger.warning("Skipping symlink that points to unexisting file:\n%s", full_path)
                         continue
-
+                
                 self._static.append(Static(self, path))
+
 
         return self._static
 
@@ -367,7 +404,7 @@ class Site(SiteCompatibilityLayer):
             if not self._page_cache.has_key(path):
                 self._page_cache[path] = YamlPage(self, path)
 
-            #pages.append(self._page_cache[path])
+            pages.append(self._page_cache[path])
 
 
         return pages

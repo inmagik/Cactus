@@ -103,7 +103,9 @@ class Page(PageCompatibilityLayer, ResourceURLHelperMixin):
         context, data = self.site.plugin_manager.preBuildPage(
             self.site, self, context, data)
 
-        return Template(data).render(context)
+        tpl =  Template(data)
+        
+        return tpl.render(context)
 
     def build(self):
         """
