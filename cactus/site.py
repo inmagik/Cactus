@@ -28,6 +28,7 @@ from cactus.utils.network import internetWorking
 from cactus.utils.parallel import multiMap, PARALLEL_DISABLED, PARALLEL_CONSERVATIVE, PARALLEL_AGGRESSIVE
 from cactus.utils.url import is_external
 from cactus.page import Page
+from cactus.yaml_page import YamlPage
 from cactus.static import Static
 from cactus.listener import Listener
 # from cactus.server import Server, RequestHandler
@@ -130,6 +131,7 @@ class Site(SiteCompatibilityLayer):
         self.static_path = os.path.join(path, 'static')
         self.script_path = os.path.join(os.getcwd(), __file__)
         self.locale_path = os.path.join(path, "locale")
+        self.yaml_page_path = os.path.join(path, "yaml_pages")
 
 
     def setup(self):
@@ -356,6 +358,17 @@ class Site(SiteCompatibilityLayer):
                 self._page_cache[path] = Page(self, path)
 
             pages.append(self._page_cache[path])
+
+        for path in fileList(self.yaml_page_path, relative=True):
+            
+            if path.endswith("~"):
+                continue
+
+            if not self._page_cache.has_key(path):
+                self._page_cache[path] = YamlPage(self, path)
+
+            #pages.append(self._page_cache[path])
+
 
         return pages
 
